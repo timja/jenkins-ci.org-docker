@@ -1,5 +1,5 @@
 # escape=`
-FROM adoptopenjdk:11-openj9-windowsservercore-1809
+FROM jenkins/openjdk:11-hotspot-windowsservercore-ltsc2019
 
 ARG user=jenkins
 ARG http_port=8080
@@ -52,7 +52,7 @@ ENV JENKINS_UC https://updates.jenkins.io
 ENV JENKINS_UC_EXPERIMENTAL=https://updates.jenkins.io/experimental
 ENV JENKINS_INCREMENTALS_REPO_MIRROR=https://repo.jenkins-ci.org/incrementals
 
-ARG PLUGIN_CLI_URL=https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.1.1/jenkins-plugin-manager-2.1.1.jar
+ARG PLUGIN_CLI_URL=https://github.com/jenkinsci/plugin-installation-manager-tool/releases/download/2.9.0/jenkins-plugin-manager-2.9.0.jar
 RUN curl.exe -fsSL "$env:PLUGIN_CLI_URL" -o C:/ProgramData/Jenkins/jenkins-plugin-manager.jar
 
 # for main web interface:
@@ -62,18 +62,6 @@ EXPOSE ${http_port}
 EXPOSE ${agent_port}
 
 ENV COPY_REFERENCE_FILE_LOG $JENKINS_HOME/copy_reference_file.log
-
-# # set variables to create shared class cache
-# ENV JAVA_SCC_OPTS "-Xshareclasses:name=jenkins_scc,cacheDir=C:/tmp,enableBCI -Xscmx80M"
-# ENV JAVA_OLD_OPTS ${JAVA_OPTS}
-# ENV JAVA_OPTS "${JAVA_SCC_OPTS} ${JAVA_OPTS}"
-
-# # create shared class cache
-# RUN $j = Start-Job -ScriptBlock { & C:/ProgramData/Jenkins/jenkins.ps1 } ; Start-Sleep -Seconds 120 ; Stop-Job $j
-
-# # revert JAVA_OPTS to not have shared class cache
-# ENV JAVA_SCC_OPTS "-Xshareclasses:name=jenkins_scc,cacheDir=C:/tmp,readonly"
-# ENV JAVA_OPTS "${JAVA_SCC_OPTS} ${JAVA_OLD_OPTS}"
 
 COPY jenkins-support.psm1 C:/ProgramData/Jenkins
 COPY jenkins.ps1 C:/ProgramData/Jenkins
