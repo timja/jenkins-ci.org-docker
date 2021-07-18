@@ -7,6 +7,8 @@ export DOCKER_CLI_EXPERIMENTAL=enabled
 ## Required to have docker build output always printed on stdout
 export BUILDKIT_PROGRESS=plain
 
+export ARCH=$(arch)
+
 all: shellcheck build test
 
 # Set to 'true' to disable parellel tests
@@ -19,13 +21,15 @@ TEST_SUITES ?= $(CURDIR)/tests
 # No additional flags by default (used to add --print)
 BAKE_ADDITIONAL_FLAGS ?=
 
+arch := $(shell uname -m)
+
 ##### Macros
 ## Check the presence of a CLI in the current PATH
 check_cli = type "$(1)" >/dev/null 2>&1 || { echo "Error: command '$(1)' required but not found. Exiting." ; exit 1 ; }
 ## Check if a given image exists in the current manifest docker-bake.hcl
 check_image = make --silent list | grep -w '$(1)' >/dev/null 2>&1 || { echo "Error: the image '$(1)' does not exist in manifest. Please check the output of 'make list'. Exiting." ; exit 1 ; }
 ## Generic command to build an image from the manifest
-build_image = docker buildx bake -f docker-bake.hcl --set '*.platform=linux/amd64' --load '$(1)' $(BAKE_ADDITIONAL_FLAGS)
+build_image = set -x; docker buildx bake -f docker-bake.hcl --set '*.platform=linux/$(arch)' --load '$(1)' $(BAKE_ADDITIONAL_FLAGS)
 
 check-reqs:
 ## Build requirements
@@ -40,15 +44,14 @@ check-reqs:
 shellcheck:
 	$(ROOT_DIR)/tools/shellcheck -e SC1091 jenkins-support *.sh
 
-build:
+build: check-reqs
 	$(call build_image,linux)
+
+build-%: check-reqs
+	@$(call build_image,$*)
 
 list: check-reqs
 	@make --silent build BAKE_ADDITIONAL_FLAGS=--print | jq -r '.target | keys[]'
-
-build-%: check-reqs
-	@$(call check_image,$*)
-	@$(call build_image,$*)
 
 bats:
 	git clone https://github.com/bats-core/bats-core bats ;\
